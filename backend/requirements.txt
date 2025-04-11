@@ -1,6 +1,5 @@
 PyPDF2
 dotenv
-os
 io
 langchain_core
 langchain

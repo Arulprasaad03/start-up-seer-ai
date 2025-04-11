@@ -106,7 +106,10 @@ const PredictionResult = ({ result }: PredictionResultProps) => {
                     </div>
                     <span className="text-sm">{factor.score}%</span>
                   </div>
-                  <Progress value={factor.score} className="h-2" indicatorClassName={getProgressColor(factor.score)} />
+                  <Progress 
+                    value={factor.score} 
+                    className={`h-2 ${getProgressColor(factor.score)}`} 
+                  />
                 </div>
               ))}
             </TabsContent>

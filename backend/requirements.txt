@@ -1,0 +1,9 @@
+PyPDF2
+dotenv
+os
+io
+langchain_core
+langchain
+langchain_groq
+fastapi
+uvicorn

@@ -6,7 +6,7 @@ import FeatureSection from '@/components/FeatureSection';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Brain, Network, Cpu, Sparkles } from 'lucide-react';
+import { Brain, Network, Cpu, Sparkles, FileText } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -41,11 +41,19 @@ const Index = () => {
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Enter your startup details and get an AI-powered success prediction with actionable insights in minutes.
             </p>
-            <Button asChild size="lg" className="gap-2">
-              <Link to="/predict">
-                Try the Prediction Tool
-              </Link>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button asChild size="lg" className="gap-2">
+                <Link to="/predict">
+                  Try the Prediction Tool
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="gap-2">
+                <Link to="/analyze-pdf">
+                  <FileText className="h-4 w-4" />
+                  Analyze Business PDF
+                </Link>
+              </Button>
+            </div>
           </div>
         </div>
       </main>

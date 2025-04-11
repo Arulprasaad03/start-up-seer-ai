@@ -83,27 +83,27 @@ export async function predictStartupSuccess(data: PredictionFormData): Promise<P
     {
       name: "Team & Leadership",
       score: getFactorScore(data.teamSize, data.founderExperience),
-      impact: getImpact(data.founderExperience)
+      impact: getImpact(data.founderExperience) as 'positive' | 'negative' | 'neutral'
     },
     {
       name: "Funding",
       score: getFactorScore(data.fundingAmount),
-      impact: getImpact(data.fundingAmount)
+      impact: getImpact(data.fundingAmount) as 'positive' | 'negative' | 'neutral'
     },
     {
       name: "Market Opportunity",
       score: getFactorScore(data.targetMarket, data.industry),
-      impact: getImpact(data.targetMarket)
+      impact: getImpact(data.targetMarket) as 'positive' | 'negative' | 'neutral'
     },
     {
       name: "Competition",
       score: 100 - data.competitionLevel,
-      impact: data.competitionLevel > 70 ? 'negative' : 'positive'
+      impact: data.competitionLevel > 70 ? 'negative' as const : 'positive' as const
     },
     {
       name: "Product Readiness",
       score: getFactorScore(data.productStage),
-      impact: getImpact(data.productStage)
+      impact: getImpact(data.productStage) as 'positive' | 'negative' | 'neutral'
     }
   ];
   

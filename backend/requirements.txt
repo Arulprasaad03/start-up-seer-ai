@@ -1,6 +1,5 @@
 PyPDF2
 dotenv
-io
 langchain_core
 langchain
 langchain_groq

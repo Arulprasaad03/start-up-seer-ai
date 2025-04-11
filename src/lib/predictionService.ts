@@ -1,7 +1,8 @@
 
-import { delay } from '@/lib/utils';
+// Simulated prediction service (would connect to a real ML model in production)
+import { sleep } from '@/lib/utils';
 
-interface StartupData {
+export interface PredictionFormData {
   companyName: string;
   industry: string;
   foundingYear: string;
@@ -14,7 +15,7 @@ interface StartupData {
   businessModel: string;
 }
 
-interface PredictionResult {
+export interface PredictionResult {
   score: number;
   confidence: string;
   strengths: string[];
@@ -27,155 +28,204 @@ interface PredictionResult {
   }[];
 }
 
-// This is a mock prediction service for demo purposes
-// In a real application, this would make API calls to a ML model
-export const predictStartupSuccess = async (data: StartupData): Promise<PredictionResult> => {
-  // Simulate API call
-  await delay(2000);
+export async function predictStartupSuccess(data: PredictionFormData): Promise<PredictionResult> {
+  // Simulating API delay
+  await sleep(2000);
   
-  // For demo, generate a score based on the input data
-  let baseScore = Math.floor(Math.random() * 40) + 30; // Random score between 30-70
+  // Dummy algorithm for demo purposes
+  // In a real app, this would call a backend API that runs the ML model
   
-  // Adjust score based on certain factors (simplified for demo)
-  const currentYear = new Date().getFullYear();
-  const yearsInBusiness = currentYear - parseInt(data.foundingYear);
+  let baseScore = 60; // Starting point
   
-  // Experience usually correlates with success
-  if (data.founderExperience === 'expert') baseScore += 15;
-  else if (data.founderExperience === 'intermediate') baseScore += 8;
+  // Adjust based on team size (larger teams might have better chance but higher burn rate)
+  if (data.teamSize === '11-20' || data.teamSize === '21-50') baseScore += 5;
+  if (data.teamSize === '50+') baseScore += 3;
+  if (data.teamSize === 'solo') baseScore -= 5;
   
-  // Team size impact
-  const teamSize = parseInt(data.teamSize);
-  if (teamSize > 20) baseScore += 5;
-  else if (teamSize > 10) baseScore += 3;
-  else if (teamSize > 5) baseScore += 1;
+  // Adjust based on founder experience
+  if (data.founderExperience === 'prev-success') baseScore += 15;
+  if (data.founderExperience === 'industry-expert') baseScore += 10;
+  if (data.founderExperience === 'serial') baseScore += 12;
+  if (data.founderExperience === 'prev-failed') baseScore += 5; // Learning from mistakes is valuable
   
-  // Funding impact
-  const fundingInK = parseInt(data.fundingAmount.replace(/[^0-9]/g, ''));
-  if (fundingInK > 1000) baseScore += 10;
-  else if (fundingInK > 500) baseScore += 6;
-  else if (fundingInK > 100) baseScore += 3;
+  // Adjust based on funding
+  if (data.fundingAmount === 'bootstrap') baseScore -= 5;
+  if (data.fundingAmount === 'angel') baseScore += 3;
+  if (data.fundingAmount === 'seed') baseScore += 5;
+  if (data.fundingAmount === 'seriesA') baseScore += 8;
+  if (data.fundingAmount === 'seriesB') baseScore += 10;
   
-  // Industry-specific adjustments
-  if (data.industry === 'Technology' || data.industry === 'Healthcare') {
-    baseScore += 5;
-  }
+  // Adjust based on product stage
+  if (data.productStage === 'idea') baseScore -= 10;
+  if (data.productStage === 'mvp') baseScore -= 5;
+  if (data.productStage === 'beta') baseScore += 0;
+  if (data.productStage === 'launched') baseScore += 8;
+  if (data.productStage === 'growth') baseScore += 12;
   
-  // Product stage
-  if (data.productStage === 'Launched with paying customers') {
-    baseScore += 12;
-  } else if (data.productStage === 'Beta with early users') {
-    baseScore += 6;
-  }
+  // Industry factor
+  if (data.industry === 'tech') baseScore += 5;
+  if (data.industry === 'healthcare') baseScore += 3;
+  if (data.industry === 'finance') baseScore += 2;
   
-  // Competition level (higher competition means lower chance)
-  baseScore -= Math.min(15, data.competitionLevel * 1.5);
+  // Competition adjustment
+  baseScore -= Math.floor(data.competitionLevel / 10);
   
-  // Business model
-  if (data.businessModel === 'Subscription (SaaS)') {
-    baseScore += 8;
-  }
-  
-  // Ensure score is within 0-100 range
+  // Clamp the score between 0 and 100
   const finalScore = Math.max(0, Math.min(100, baseScore));
   
-  // Generate confidence level
-  let confidence = "Low";
-  if (yearsInBusiness > 3) {
-    confidence = "High";
-  } else if (yearsInBusiness > 1) {
-    confidence = "Medium";
-  }
+  // Determine confidence level
+  let confidence = "Medium";
+  if (finalScore > 75 || finalScore < 25) confidence = "High";
+  if (finalScore > 40 && finalScore < 60) confidence = "Low";
   
   // Generate key factors
   const keyFactors = [
     {
-      name: "Founder Experience",
-      score: data.founderExperience === 'expert' ? 85 : data.founderExperience === 'intermediate' ? 60 : 30,
-      impact: data.founderExperience === 'expert' ? 'positive' : data.founderExperience === 'intermediate' ? 'neutral' : 'negative' as 'positive' | 'negative' | 'neutral'
+      name: "Team & Leadership",
+      score: getFactorScore(data.teamSize, data.founderExperience),
+      impact: getImpact(data.founderExperience)
     },
     {
-      name: "Funding Level",
-      score: fundingInK > 500 ? 75 : fundingInK > 100 ? 50 : 30,
-      impact: fundingInK > 500 ? 'positive' : fundingInK > 100 ? 'neutral' : 'negative' as 'positive' | 'negative' | 'neutral'
-    },
-    {
-      name: "Team Composition",
-      score: teamSize > 10 ? 70 : teamSize > 5 ? 50 : 35,
-      impact: teamSize > 10 ? 'positive' : teamSize > 5 ? 'neutral' : 'negative' as 'positive' | 'negative' | 'neutral'
+      name: "Funding",
+      score: getFactorScore(data.fundingAmount),
+      impact: getImpact(data.fundingAmount)
     },
     {
       name: "Market Opportunity",
-      score: data.targetMarket === 'Global' ? 80 : data.targetMarket === 'National' ? 60 : 40,
-      impact: data.targetMarket === 'Global' ? 'positive' : data.targetMarket === 'National' ? 'neutral' : 'negative' as 'positive' | 'negative' | 'neutral'
+      score: getFactorScore(data.targetMarket, data.industry),
+      impact: getImpact(data.targetMarket)
     },
     {
-      name: "Competitive Landscape",
-      score: Math.max(0, 100 - data.competitionLevel * 10),
-      impact: data.competitionLevel < 5 ? 'positive' : data.competitionLevel < 8 ? 'neutral' : 'negative' as 'positive' | 'negative' | 'neutral'
+      name: "Competition",
+      score: 100 - data.competitionLevel,
+      impact: data.competitionLevel > 70 ? 'negative' : 'positive'
+    },
+    {
+      name: "Product Readiness",
+      score: getFactorScore(data.productStage),
+      impact: getImpact(data.productStage)
     }
   ];
   
   // Generate strengths
-  const strengthPool = [
-    `Strong ${data.founderExperience} level founder experience`,
-    `Well-defined ${data.targetMarket} target market approach`,
-    `Solid ${data.businessModel} business model`,
-    `Adequate funding of $${data.fundingAmount}`,
-    `Team of ${data.teamSize} members for execution capability`,
-    `Product already in ${data.productStage} stage`,
-    `Good positioning in the ${data.industry} industry`
-  ];
+  const strengths = [];
+  if (getFactorScore(data.founderExperience) > 70) 
+    strengths.push("Strong founding team with relevant experience");
+  if (getFactorScore(data.fundingAmount) > 70) 
+    strengths.push("Well-funded with adequate runway");
+  if (getFactorScore(data.productStage) > 60) 
+    strengths.push("Product is mature and market-tested");
+  if (data.competitionLevel < 40) 
+    strengths.push("Operates in a market with limited competition");
+  if (data.industry === 'tech' || data.industry === 'healthcare')
+    strengths.push("Industry with strong growth potential");
   
   // Generate weaknesses
-  const weaknessPool = [
-    data.founderExperience !== 'expert' ? `Limited founder experience at ${data.founderExperience} level` : '',
-    data.targetMarket === 'Local' ? 'Limited market reach with local focus' : '',
-    data.businessModel === 'Not yet defined' ? 'Undefined business model' : '',
-    fundingInK < 100 ? 'Insufficient funding for rapid growth' : '',
-    teamSize < 5 ? 'Small team may struggle with scaling' : '',
-    data.productStage === 'Idea/Concept' ? 'Very early product stage' : '',
-    data.competitionLevel > 7 ? 'Highly competitive market landscape' : ''
-  ].filter(item => item !== '');
-  
+  const weaknesses = [];
+  if (getFactorScore(data.founderExperience) < 50) 
+    weaknesses.push("Limited founder experience in this industry");
+  if (getFactorScore(data.fundingAmount) < 50) 
+    weaknesses.push("Potential funding challenges or limited runway");
+  if (getFactorScore(data.productStage) < 50) 
+    weaknesses.push("Early product stage with unproven market fit");
+  if (data.competitionLevel > 60) 
+    weaknesses.push("Highly competitive market landscape");
+  if (data.teamSize === 'solo' || data.teamSize === '2-5')
+    weaknesses.push("Small team may struggle to scale quickly");
+    
   // Generate recommendations
-  const recommendationPool = [
-    data.founderExperience !== 'expert' ? 'Consider partnering with experienced advisors or mentors' : '',
-    data.targetMarket !== 'Global' ? 'Explore opportunities to expand market reach' : '',
-    data.businessModel === 'Not yet defined' ? 'Prioritize business model definition and validation' : '',
-    fundingInK < 500 ? 'Develop a fundraising strategy for the next growth stage' : '',
-    teamSize < 10 ? 'Identify key hiring needs for scaling operations' : '',
-    data.productStage !== 'Launched with paying customers' ? 'Accelerate product development timeline' : '',
-    data.competitionLevel > 5 ? 'Conduct detailed competitive analysis to identify unique positioning' : '',
-    'Develop clear KPIs to measure business health and growth',
-    'Build robust customer feedback mechanisms',
-    'Create a detailed 18-month roadmap with milestones'
-  ].filter(item => item !== '');
-  
-  // Select random items from each pool
-  const getRandomItems = (pool: string[], count: number) => {
-    const result: string[] = [];
-    const poolCopy = [...pool];
-    
-    for (let i = 0; i < Math.min(count, poolCopy.length); i++) {
-      const randomIndex = Math.floor(Math.random() * poolCopy.length);
-      result.push(poolCopy[randomIndex]);
-      poolCopy.splice(randomIndex, 1);
-    }
-    
-    return result;
-  };
-  
-  const strengths = getRandomItems(strengthPool, 3);
-  const weaknesses = getRandomItems(weaknessPool, Math.min(3, weaknessPool.length));
-  const recommendations = getRandomItems(recommendationPool, 4);
+  const recommendations = [];
+  if (getFactorScore(data.founderExperience) < 60) 
+    recommendations.push("Consider bringing on advisors or mentors with industry experience");
+  if (getFactorScore(data.fundingAmount) < 60) 
+    recommendations.push("Explore additional funding options or optimize for capital efficiency");
+  if (getFactorScore(data.productStage) < 60) 
+    recommendations.push("Accelerate product development with focused MVP testing");
+  if (data.competitionLevel > 50) 
+    recommendations.push("Develop a clear differentiation strategy from competitors");
+  recommendations.push("Focus on building a sustainable growth model with clear unit economics");
   
   return {
-    score: Math.round(finalScore),
+    score: finalScore,
     confidence,
-    strengths,
-    weaknesses,
-    recommendations,
+    strengths: strengths.length ? strengths : ["No significant strengths detected"],
+    weaknesses: weaknesses.length ? weaknesses : ["No significant weaknesses detected"],
+    recommendations: recommendations.length ? recommendations : ["General recommendation: continue monitoring key metrics"],
     keyFactors
   };
-};
+}
+
+// Helper functions
+function getFactorScore(...factors: string[]): number {
+  // Simple dummy algorithm
+  const weightMap: Record<string, number> = {
+    // Team size
+    'solo': 40,
+    '2-5': 60,
+    '6-10': 75,
+    '11-20': 85,
+    '21-50': 80,
+    '50+': 75,
+    
+    // Founder experience
+    'first-time': 50,
+    'prev-failed': 65,
+    'prev-success': 90,
+    'industry-expert': 85,
+    'serial': 88,
+    
+    // Funding
+    'bootstrap': 50,
+    'angel': 65,
+    'seed': 75,
+    'seriesA': 85,
+    'seriesB': 90,
+    
+    // Product stage
+    'idea': 30,
+    'mvp': 50,
+    'beta': 70,
+    'launched': 85,
+    'growth': 90,
+    
+    // Industries
+    'tech': 80,
+    'healthcare': 75,
+    'finance': 70,
+    'ecommerce': 65,
+    'education': 60,
+    'manufacturing': 55,
+    'service': 60,
+    'other': 50,
+    
+    // Target market
+    'b2c': 70,
+    'b2b': 75,
+    'b2b2c': 65,
+    'c2c': 60,
+    'enterprise': 80,
+    'government': 65
+  };
+  
+  let score = 0;
+  let validFactors = 0;
+  
+  for (const factor of factors) {
+    if (factor && weightMap[factor]) {
+      score += weightMap[factor];
+      validFactors++;
+    }
+  }
+  
+  return validFactors ? Math.round(score / validFactors) : 50;
+}
+
+function getImpact(factor: string): 'positive' | 'negative' | 'neutral' {
+  const positiveFactors = ['prev-success', 'industry-expert', 'serial', 'seed', 'seriesA', 'seriesB', 'launched', 'growth', 'b2b', 'enterprise'];
+  
+  const negativeFactors = ['first-time', 'solo', 'idea', 'bootstrap'];
+  
+  if (positiveFactors.includes(factor)) return 'positive';
+  if (negativeFactors.includes(factor)) return 'negative';
+  return 'neutral';
+}

@@ -5,3 +5,4 @@ langchain
 langchain_groq
 fastapi
 uvicorn
+python-multipart
